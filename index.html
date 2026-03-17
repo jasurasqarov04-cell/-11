@@ -172,13 +172,24 @@ function barColor(pct){
   return s.getPropertyValue('--red').trim();
 }
 
+function parseCell(cell){
+  if(!cell||cell.v===null||cell.v===undefined) return "";
+  const v=cell.v;
+  if(typeof v==="string"&&v.startsWith("Date(")){
+    const parts=v.slice(5,-1).split(",").map(Number);
+    const d=new Date(parts[0],parts[1],parts[2]);
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  }
+  return String(v);
+}
+
 async function fetchSheet(name){
   const url='https://docs.google.com/spreadsheets/d/'+SPREADSHEET_ID+'/gviz/tq?tqx=out:json&sheet='+encodeURIComponent(name);
   const res=await fetch(url);
   const text=await res.text();
   const json=JSON.parse(text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\)/)[1]);
   const cols=json.table.cols.map(c=>c.label);
-  return json.table.rows.map(row=>{const obj={};row.c.forEach((cell,i)=>{obj[cols[i]]=cell?cell.v:''});return obj});
+  return json.table.rows.map(row=>{const obj={};row.c.forEach((cell,i)=>{obj[cols[i]]=parseCell(cell)});return obj});
 }
 
 function buildLineChart(data){
